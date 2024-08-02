@@ -17,20 +17,22 @@ module.exports = {
     return jwt.sign(payload, secret, {expiresIn: expiration})
   },
   authMiddleware({ req }) {
-    let token = req.body.token || req.query.token || req.header.authorization
+    let token = req.body.token || req.query.token || req.headers.authorization 
+
     if (req.headers.authorization) {
-      token = token.split('').pop().trim()
+      token = token.split(' ').pop().trim()
     }
 
-    if (!token) return req
+    if (!token) {
+      return req
+    }
 
     try {
-      const data = jwt.verify(token, secret, { maxAge: expiration })
+      const data  = jwt.verify(token, secret, { maxAge: expiration })
       req.user = data
-    } catch (err) {
-      console.log('Invalid token')
+    } catch(error) {
     }
-    return req
 
+    return req
   }
 };

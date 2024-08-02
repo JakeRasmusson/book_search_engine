@@ -1,31 +1,59 @@
 const { User } = require('../models')
-const { signToken } = require('../utils/auth')
+const { signToken, AuthenticationError } = require('../utils/auth')
 
 const resolvers = {
     Query: {
-        getSingleUser: async (parent, { user }) => {
-            const singleUser = await User.findById({id: user._id})
-            return singleUser
+        me: async (parent, args, context) => {
+            if (context.user) {
+                return await User.findById(context.user._id)
+            }
+            throw AuthenticationError
         }
     },
     Mutation: {
-        createUser: async (parent, { user }) => {
-            const createUser = await User.create(user)
-            if (!createUser) return 'Unable to create user'
-            const token = signToken(createUser)
-            return { createUser, token }
+        addUser: async (parent, { user }) => {
+            console.log(user)
+            user = await User.create(user)
+            if (!user) return 'Unable to create user'
+            const token = signToken(user)
+            console.log(user)
+            return { token, user}
         },
-        loginUser: async (parent, { email, password }, context) => {
-            const userProfile = await User.findOne({ email})
+        login: async (parent, { email, password }, context) => {
+            const user = await User.findOne({ email })
 
-            if (!userProfile) return 'No user found'
+            if (!user) throw AuthenticationError
 
-            const isCorrectPassword = userProfile.isCorrectPassword(password)
+            const isCorrectPassword = user.isCorrectPassword(password)
 
-            if (!isCorrectPassword) return 'Auth Error'
-
-            const token = signToken(userProfile)
-            return { token, userProfile }
+            if (!isCorrectPassword) throw AuthenticationError
+            console.log(user)
+            const token = signToken(user)
+            return { token, user }
+        },
+        saveBook: async (parent, { book }, context ) => {
+            if (context.user) {
+               return User.findOneAndUpdate(
+                {_id: context.user._id},
+                {
+                    $addToSet: { savedBooks: book }
+                },
+                { new: true, runValidators: true }
+               )
+            }
+            throw AuthenticationError
+        },
+        removeBook: async (parent, { bookId }, context ) => {
+            if (context.user) {
+                return User.findOneAndUpdate(
+                 {_id: context.user._id},
+                 {
+                     $pull: {savedBooks : { bookId } } 
+                 }, 
+                 { new: true }
+                )
+             }
+             throw AuthenticationError
         }
     }
 }
