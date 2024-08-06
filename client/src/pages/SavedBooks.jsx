@@ -8,7 +8,7 @@ import { GET_ME } from '../utils/queries'
 import { REMOVE_BOOK } from '../utils/mutations'
 
 const SavedBooks = () => {
-	const [removeBook] = useMutation(REMOVE_BOOK)
+	const [removeBook, {error: removeBookError,}] = useMutation(REMOVE_BOOK)
 
 	const { loading, error, data } = useQuery(GET_ME)
 
@@ -30,7 +30,7 @@ const SavedBooks = () => {
 
 		try {
 			const { data } = await removeBook({ variables: { bookId } })
-			if (!data) {
+			if (removeBookError) {
 				throw new Error('something went wrong!')
 			}
 
@@ -43,7 +43,7 @@ const SavedBooks = () => {
 
 			removeBookId(bookId)
 		} catch (err) {
-			console.error(err)
+			console.error(removeBookError)
 		}
 	}
 
